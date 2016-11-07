@@ -6,6 +6,9 @@ var gameScene = cc.Scene.extend({
       this.addChild(gameLayer);
    }
 });
+
+var totem;
+
 var game = cc.Layer.extend({
    space: null,
    ctor: function() {
@@ -17,12 +20,15 @@ var game = cc.Layer.extend({
       this.initSpace();
       var winWidth = cc.winSize.width
       var winHeight = cc.winSize.height
-      this.createDynamicObject(res.totem_png, winWidth / 2 - 10, winHeight, 100, 0.2, 0.8, "")
-      this.createStaticObject(res.ground_png, cc.winSize.width / 2, 100);
+      totem =  this.createDynamicObject(res.totem_png, winWidth / 2 - 10, winHeight, 1, 0.2, 0.8, "")
+     this.createStaticObject(res.ground_png, cc.winSize.width / 2, 100);
       //     this.createFloor();
-      // this.createPhysicsSprite();
+
+      cc.eventManager.addListener(touchListener,this)
 
    },
+
+
 
 
    createStaticObject: function(spriteImage, posX, posY) {
@@ -65,6 +71,7 @@ var game = cc.Layer.extend({
       physicsSprite.setPosition(posX, posY);
       this.addChild(physicsSprite);
 
+      return physicsSprite;
    },
 
    initSpace: function() {
@@ -99,3 +106,16 @@ var game = cc.Layer.extend({
       this.space.step(dt);
    },
 });
+
+var touchListener = cc.EventListener.create (
+  {
+    event: cc.EventListener.TOUCH_ONE_BY_ONE, // シングルタッチのみ対応
+    swallowTouches:false, // 以降のノードにタッチイベントを渡す
+   onTouchBegan:function(touch, event){ // タッチ開始時
+     var body = totem.getBody()
+     console.log(body)
+     //『body』に力を加えます
+     body.applyImpulse(cp.v(500, 500),cp.v(0,0))
+   }
+  }
+);
