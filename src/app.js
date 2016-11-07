@@ -1,3 +1,12 @@
+//衝突タイプ（衝突時の判別用）
+if(typeof SpriteTag == "undefined") {
+	var SpriteTag = {};
+	SpriteTag.totem = 0; // トーテム
+	SpriteTag.block = 1; // ブロック
+	SpriteTag.object = 2; //オブジェ
+};
+
+
 var gameScene = cc.Scene.extend({
    onEnter: function() {
       this._super();
@@ -8,6 +17,8 @@ var gameScene = cc.Scene.extend({
 });
 
 var totem;
+
+var blocks = [];
 
 var game = cc.Layer.extend({
    space: null,
@@ -20,9 +31,13 @@ var game = cc.Layer.extend({
       this.initSpace();
       var winWidth = cc.winSize.width
       var winHeight = cc.winSize.height
-      totem =  this.createDynamicObject(res.totem_png, winWidth / 2 - 10, winHeight, 1, 0.2, 0.8, "")
+      totem =  this.createDynamicObject(res.totem_png, winWidth*0.4 , winHeight, 1, 0.2, 0.8, "")
      this.createStaticObject(res.ground_png, cc.winSize.width / 2, 100);
-      //     this.createFloor();
+
+blocks[0] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120,1, 10, 0.8, "")
+blocks[1] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120+25*1,1, 10, 0.8, "")
+blocks[2] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120+25*2,1, 10, 0.8, "")
+blocks[3] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120+25*3,1, 10, 0.8, "")
 
       cc.eventManager.addListener(touchListener,this)
 
@@ -33,6 +48,7 @@ var game = cc.Layer.extend({
 
    createStaticObject: function(spriteImage, posX, posY) {
       var staticSprite = cc.Sprite.create(spriteImage);
+
       staticSprite.setPosition(posX, posY);
       this.addChild(staticSprite);
       var staticBody = new cp.StaticBody(); // 静的ボディを作成
@@ -40,9 +56,12 @@ var game = cc.Layer.extend({
       var width = staticSprite.getContentSize().width
       var height = staticSprite.getContentSize().height
       var shape = new cp.BoxShape(staticBody, width, height);
+      shape.setCollisionType(SpriteTag.block);
       // shape.setElasticity(1);
       // shape.setFriction(0.2);
       this.space.addShape(shape);
+
+      return shape;
    },
 
    createDynamicObject: function(spriteImage, posX, posY, mass, friction, elasticity, type) {
@@ -65,6 +84,9 @@ var game = cc.Layer.extend({
       var shape = new cp.BoxShape(body, width, height);
       shape.setFriction(friction);
       shape.setElasticity(elasticity);
+//トーテムであるフラグ
+      shape.setCollisionType(SpriteTag.totem);
+
       this.space.addShape(shape);
 
       physicsSprite.setBody(body);
@@ -101,10 +123,17 @@ var game = cc.Layer.extend({
    },
 
    update: function(dt) {
-
+     // ランナーのスプライトとBodyの同期
       // 物理エンジンの更新
       this.space.step(dt);
-   },
+       for(i=0; i<blocks.length ;i++){
+         console.log( blocks[i].x)
+       }
+      //     var body =  blocks[i].getBody()
+      // // //      blocks[i].setPosition(body.p);
+      //       blocks[i].setPosition(-cc.radiansToDegrees(body.w));
+      //  }
+    },
 });
 
 var touchListener = cc.EventListener.create (

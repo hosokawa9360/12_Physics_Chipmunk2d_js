@@ -96,3 +96,19 @@ var touchListener = cc.EventListener.create (
   }
 );
 ```
+### 3.他の物体にぶつけてみる
+
+外部変数  
+```
+var blocks = [];
+```
+var gameの中
+```
+blocks[0] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120,1, 10, 0.8, "")
+blocks[1] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120+25*1,1, 10, 0.8, "")
+blocks[2] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120+25*2,1, 10, 0.8, "")
+blocks[3] = this.createDynamicObject(res.brick1x1_png, winWidth* 0.7,120+25*3,1, 10, 0.8, "")
+```
+
+
+衝突したら、スプライトが飛んでいくはずのなのに・・・・
