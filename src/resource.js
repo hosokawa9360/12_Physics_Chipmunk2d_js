@@ -5,7 +5,8 @@ var res = {
     brick4x1_png : "res/brick4x1.png",
     brick4x2_png : "res/brick4x2.png",
     ground_png : "res/ground.png",
-    totem_png : "res/totem.png"
+    totem_png : "res/totem.png",
+    landing_mp3:"res/landing.mp3"
 };
 
 var g_resources = [];

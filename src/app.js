@@ -3,7 +3,7 @@ if (typeof SpriteTag == "undefined") {
    var SpriteTag = {};
    SpriteTag.totem = 0; // トーテム
    SpriteTag.block = 1; // ブロック
-   SpriteTag.object = 2; //オブジェ
+   SpriteTag.ground = 2; //地面
 };
 
 var gameLayer;
@@ -24,7 +24,7 @@ var shapeArray = [];
 var g_groundHeight = 10;
 
 var game = cc.Layer.extend({
-   space: null,
+   //space: null,
    ctor: function() {
 
       this._super();
@@ -37,30 +37,56 @@ var game = cc.Layer.extend({
       totem = this.createDynamicObject(res.totem_png,
          winWidth * 0.4, winHeight, 1, 0.2, 0.8, SpriteTag.totem)
 
-      this.createStaticObject(res.ground_png, cc.winSize.width / 2, 100);
-       this.createDynamicObject(res.brick1x1_png, winWidth * 0.7, 120, 1, 10, 0.8, SpriteTag.block)
-       this.createDynamicObject(res.brick2x1_png, winWidth * 0.7, 120 + 25 * 1, 1, 10, 0.8, SpriteTag.block)
-       this.createDynamicObject(res.brick1x1_png, winWidth * 0.7, 120 + 25 * 2, 1, 10, 0.8, SpriteTag.block)
-       this.createDynamicObject(res.brick1x1_png, winWidth * 0.7, 120 + 25 * 3, 1, 10, 0.8, SpriteTag.block)
+      this.createStaticObject(res.ground_png, cc.winSize.width / 2, 100, 0.1, 0,SpriteTag.ground);
+      this.createDynamicObject(res.brick1x1_png,
+         winWidth * 0.7, 120, 1, 10, 0.8, SpriteTag.block)
+      this.createDynamicObject(res.brick2x1_png, winWidth * 0.7, 120 + 25 * 1, 1, 10, 0.8, SpriteTag.block)
+      this.createDynamicObject(res.brick1x1_png, winWidth * 0.7, 120 + 25 * 2, 1, 10, 0.8, SpriteTag.block)
+      this.createDynamicObject(res.brick1x1_png, winWidth * 0.7, 120 + 25 * 3, 1, 10, 0.8, SpriteTag.block)
+			//
+      cc.eventManager.addListener(touchListener, this);
+      // space.addCollisionHandler(SpriteTag.totem, SpriteTag.ground,
+      //    this.collisionGroundBegin.bind(this), null, null, null);
 
-      cc.eventManager.addListener(touchListener, this)
+      // 説明
+      // .bind(this),  // レイヤーのthisを使えるようにする
+      //         		null, // preSolve
+      //         		null, // postSolve
+      //         		null); // separate
+
+      this.scheduleUpdate();
+   },
+
+   collisionGroundBegin: function(arbiter, space) {
+      var shapes = arbiter.getShapes();
+
+      //cc.audioEngine.playEffect(res.landing_mp3);
 
    },
 
-   createStaticObject: function(spriteImage, posX, posY) {
-      var staticSprite = cc.Sprite.create(spriteImage);
+   createStaticObject: function(spriteImage, posX, posY,  friction, elasticity,type) {
+      var sprite = cc.Sprite.create(spriteImage);
+      var width = sprite.getContentSize().width
+      var height = sprite.getContentSize().height
 
-      staticSprite.setPosition(posX, posY);
-      this.addChild(staticSprite);
-      var staticBody = new cp.StaticBody(); // 静的ボディを作成
-      staticBody.p = cp.v(posX, posY)
-      var width = staticSprite.getContentSize().width
-      var height = staticSprite.getContentSize().height
-      var shape = new cp.BoxShape(staticBody, width, height);
-      shape.setCollisionType(SpriteTag.block);
-      // shape.setElasticity(1);
-      // shape.setFriction(0.2);
-      space.addShape(shape);
+		//	var body = new cp.StaticBody(); // 静的ボディを作成
+		var body = new cp.Body(Infinity,Infinity); // 静的ボディを作成
+
+		//	body.p = cp.v(posX, posY)
+			body.setPos(cp.v(posX, posY));
+			sprite.setPosition(posX, posY);
+      this.addChild(sprite,5);
+
+      var shape = new cp.BoxShape(body, width, height);
+			shape.setFriction(friction);
+			shape.setElasticity(elasticity);
+			shape.setCollisionType(type);
+	//		space.addShape(shape);
+		//	shape.setSensor(true);
+     space.addStaticShape(shape);
+
+
+
 
       return shape;
    },
@@ -86,7 +112,7 @@ var game = cc.Layer.extend({
       space.addShape(shape);
       shape.image = sprite;
       shape.body = body;
-				shape.type = type;
+      shape.type = type;
       sprite.shape = shape;
       shapeArray.push(shape);
 
@@ -106,7 +132,8 @@ var game = cc.Layer.extend({
          cp.v(4294967295, g_groundHeight), // MAX INT:4294967295
          0); // thickness of wall
       space.addStaticShape(wallBottom);
-      this.scheduleUpdate();
+
+
    },
 
 
@@ -126,7 +153,6 @@ var game = cc.Layer.extend({
    },
 
    update: function(dt) {
-      // ランナーのスプライトとBodyの同期
       // 物理エンジンの更新
       space.step(dt);
       for (var i = 0; i < shapeArray.length; i++) {
@@ -148,29 +174,32 @@ var touchListener = cc.EventListener.create({
    onTouchBegan: function(touch, event) { // タッチ開始時
       var pos = touch.getLocation();
 
-console.log("shapeArray.length:",shapeArray.length)
-      // すでに箱がある場所をタップしたら箱が消えるようにしてみた
+      console.log("shapeArray.length:", shapeArray.length)
+         // すべてのshapをチェックする
       for (var i = 0; i < shapeArray.length; i++) {
          var shape = shapeArray[i];
-				 		console.log("shape.type:",i,shape.type)
+         console.log("shape.type:", i, shape.type)
+            //pointQueryは物理オブジェクトの内側がタップされたかどうか判定する関数
          if (shape.pointQuery(cp.v(pos.x, pos.y)) != undefined) {
-					 		console.log("hit ")
+            console.log("hit ")
             if (shape.type == SpriteTag.block) {
+               //ブロックをタップしたときは、消去する
                space.removeBody(shape.getBody());
                space.removeShape(shape);
                gameLayer.removeChild(shape.image);
                shapeArray.splice(i, 1);
-							 	console.log("remove block")
+               console.log("remove block")
                return;
-						 } else if(shape.type == SpriteTag.totem) {
-							 	shape.body.applyImpulse(cp.v(500, 0), cp.v(0, -20))
-								return;
-						 }
-				}
-			}
-			// 何も無い場所をタップしたときは箱を追加する
-				gameLayer.createDynamicObject(res.brick1x1_png, pos.x, pos.y, 1, 10, 0.8, SpriteTag.block)
-				return;
+            } else if (shape.type == SpriteTag.totem) {
+               // トーテムをタップしたときは、衝撃を与える
+               shape.body.applyImpulse(cp.v(500, 0), cp.v(0, -20))
+               return;
+            }
+         }
+      }
+      // 何も無い場所をタップしたときは箱を追加する
+      gameLayer.createDynamicObject(res.brick1x1_png, pos.x, pos.y, 1, 10, 0.8, SpriteTag.block)
+      return;
 
    }
 
